@@ -25,3 +25,5 @@ Once yarn build command successful, you can see a new folder dist has been creat
 
 ## Sources
 Installed Electron via this guide: https://medium.com/@devesu/how-to-build-a-react-based-electron-app-d0f27413f17f
+
+Register keyboard inputs when Electron is not in focus: https://www.electronjs.org/docs/api/global-shortcut
