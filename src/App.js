@@ -3,9 +3,11 @@ import chat_image from './chat_image.jpeg';
 import './App.css';
 //import './Connections.js'
 import Peer from "peerjs";
-import io from "socket.io-client";
+//import io from "socket.io-client";
+//import io from "socket.io";
 
-const socket = io('ws://localhost:3002')
+import { io } from "socket.io-client";
+
 
 class App extends React.Component {
 
@@ -17,14 +19,18 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-     const myPeer = new Peer(undefined, {
-      //host: '/',
-      //port: '3001'
+    const socket = io('http://localhost:3002');
+
+    socket.emit('hello')
+
+    const myPeer = new Peer(undefined, {
+      host: '/',
+      port: '3001'
     })
 
     const videoGrid = document.getElementById('video-grid')
     const myVideo = document.createElement('video')
-
+    myVideo.muted = true
     navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true
@@ -49,8 +55,10 @@ class App extends React.Component {
       if (peers[userId]) peers[userId].close()
     })
 
+
     myPeer.on('open', id => {
-      socket.emit('join-room', "dev", id)
+      console.log("Joining room")
+      socket.emit('join-room', 'dev', id)
     })
 
     function connectToNewUser(userId, stream) {
