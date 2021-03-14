@@ -19,13 +19,13 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    const socket = io('http://localhost:3002');
+    const socket = io('https://m8-walkie.ew.r.appspot.com/');
 
     socket.emit('hello')
 
     const myPeer = new Peer(undefined, {
-      host: '/',
-      port: '3001'
+      host: 'peerjs-dot-m8-walkie.ew.r.appspot.com',
+      secure: true
     })
 
     const videoGrid = document.getElementById('video-grid')
