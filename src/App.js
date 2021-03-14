@@ -1,17 +1,94 @@
+import React from 'react';
 import chat_image from './chat_image.jpeg';
 import './App.css';
+//import './Connections.js'
+import Peer from "peerjs";
+import io from "socket.io-client";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={chat_image} className="App-logo" alt="chat_image" />
-        <p>
-          Chat with your m8's!
-        </p>
-      </header>
-    </div>
-  );
+const socket = io('ws://localhost:3002')
+
+class App extends React.Component {
+
+   constructor(props) {
+    super(props);
+    this.state = {
+
+    }
+  }
+
+  componentDidMount() {
+     const myPeer = new Peer(undefined, {
+      //host: '/',
+      //port: '3001'
+    })
+
+    const videoGrid = document.getElementById('video-grid')
+    const myVideo = document.createElement('video')
+
+    navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true
+    }).then(stream => {
+      addVideoStream(myVideo, stream)
+      myPeer.on('call', call => {
+        call.answer(stream)
+        const video = document.createElement('video')
+        call.on('stream', userVideoStream => {
+          addVideoStream(video, userVideoStream)
+        })
+      })
+
+      socket.on('user-connected', userId => {
+        connectToNewUser(userId, stream)
+      })
+    })
+
+    const peers = {}
+
+    socket.on('user-disconnected', userId => {
+      if (peers[userId]) peers[userId].close()
+    })
+
+    myPeer.on('open', id => {
+      socket.emit('join-room', "dev", id)
+    })
+
+    function connectToNewUser(userId, stream) {
+      const call = myPeer.call(userId, stream)
+      const video = document.createElement('video')
+      call.on('stream', userVideoStream => {
+        addVideoStream(video, userVideoStream)
+      })
+      call.on('close', () => {
+        video.remove()
+      })
+
+      peers[userId] = call
+    }
+
+    function addVideoStream(video, stream) {
+      video.srcObject = stream
+      video.addEventListener('loadedmetadata', () => {
+        video.play()
+      })
+      videoGrid.append(video)
+    }
+
+  }
+
+  render() {
+    return (
+      <div className="App">
+        <header className="App-header">
+          <img src={chat_image} className="App-logo" alt="chat_image" />
+          <p>
+            Chat with your m8's!
+          </p>
+          <div id="video-grid"></div>
+        </header>
+      </div>
+    );
+  }
 }
 
 export default App;
