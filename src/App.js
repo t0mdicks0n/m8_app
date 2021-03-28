@@ -1,33 +1,33 @@
 import React from 'react';
-import chat_image from './chat_image.jpeg';
 import './App.css';
-//import './Connections.js'
 import Peer from "peerjs";
-//import io from "socket.io-client";
-//import io from "socket.io";
 
-import { io } from "socket.io-client";
+import {io} from "socket.io-client";
 
+const DEV = false
+
+let server = DEV ? 'http://localhost:3002': 'https://m8-walkie.ew.r.appspot.com/'
+let peerjsServerOptions = DEV ? { host: "/", port: 2000} : { host: 'peerjs-dot-m8-walkie.ew.r.appspot.com', secure: true}
+
+console.log("Connect to server", server)
+const socket = io(server)
+console.log("Connect to peerjs server", peerjsServerOptions.host)
+const myPeer = new Peer(undefined, peerjsServerOptions)
 
 class App extends React.Component {
 
-   constructor(props) {
-    super(props);
-    this.state = {
 
-    }
+  constructor(props) {
+    super(props);
+    this.state = {}
+    this.setState({})
+    this.createAndJoinRoom = this.createAndJoinRoom.bind(this);
+    this.saveInput = this.saveInput.bind(this);
+    this.joinRoom = this.joinRoom.bind(this);
+    this.submitJoinRoom = this.submitJoinRoom.bind(this);
   }
 
   componentDidMount() {
-    const socket = io('https://m8-walkie.ew.r.appspot.com/');
-
-    socket.emit('hello')
-
-    const myPeer = new Peer(undefined, {
-      host: 'peerjs-dot-m8-walkie.ew.r.appspot.com',
-      secure: true
-    })
-
     const videoGrid = document.getElementById('video-grid')
     const myVideo = document.createElement('video')
     myVideo.muted = true
@@ -55,10 +55,9 @@ class App extends React.Component {
       if (peers[userId]) peers[userId].close()
     })
 
-
     myPeer.on('open', id => {
-      console.log("Joining room")
-      socket.emit('join-room', 'dev', id)
+      console.log("Peerjs id ", id)
+      this.setState({'id': id})
     })
 
     function connectToNewUser(userId, stream) {
@@ -84,17 +83,51 @@ class App extends React.Component {
 
   }
 
+  createAndJoinRoom() {
+    fetch(server + "/create-new-room")
+        .then(res => res.json())
+        .then((data) => {
+          this.setState({roomId: data["roomId"]})
+          console.log("Joining room")
+          this.joinRoom(this.state.roomId)
+        })
+        .catch(console.log)
+  }
+
+  saveInput(e) {
+    this.setState({ input: e.target.value });
+  }
+
+  submitJoinRoom() {
+    this.joinRoom(this.state.input)
+  }
+
+  joinRoom(roomId) {
+    console.log("Joining room", roomId);
+    socket.emit('join-room', roomId, this.state.id)
+  }
+
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={chat_image} className="App-logo" alt="chat_image" />
-          <p>
-            Chat with your m8's!
-          </p>
-          <div id="video-grid"></div>
-        </header>
-      </div>
+        <div className="App">
+          <header className="App-header">
+            <p>
+              Chat with your m8's!
+            </p>
+            <button onClick={this.createAndJoinRoom}>
+              Create room
+            </button>
+            <div><input
+              type="button"
+              value="Join room"
+              onClick={this.submitJoinRoom}
+            />
+            <input type="text" onChange={ this.saveInput } />
+            </div>
+            <p>{this.state.roomId ? 'Room name: ' + this.state.roomId : ''}</p>
+            <div id="video-grid"></div>
+          </header>
+        </div>
     );
   }
 }
