@@ -1,12 +1,12 @@
 import React from 'react';
 import './App.css';
 import Peer from "peerjs";
-
-import {io} from "socket.io-client";
+import { io } from "socket.io-client";
+import { Button } from '@material-ui/core';
 
 const DEV = false
 
-let server = DEV ? 'http://localhost:3002': 'https://m8-walkie.ew.r.appspot.com/'
+let server = DEV ? 'http://localhost:3002': 'https://m8-walkie.ew.r.appspot.com'
 let peerjsServerOptions = DEV ? { host: "/", port: 2000} : { host: 'peerjs-dot-m8-walkie.ew.r.appspot.com', secure: true}
 
 console.log("Connect to server", server)
@@ -28,11 +28,13 @@ class App extends React.Component {
   }
 
   componentDidMount() {
+
+ 
     const videoGrid = document.getElementById('video-grid')
     const myVideo = document.createElement('video')
     myVideo.muted = true
     navigator.mediaDevices.getUserMedia({
-      video: true,
+      //video: true,
       audio: true
     }).then(stream => {
       addVideoStream(myVideo, stream)
@@ -114,9 +116,10 @@ class App extends React.Component {
             <p>
               Chat with your m8's!
             </p>
-            <button onClick={this.createAndJoinRoom}>
+
+            <Button variant="contained" color="primary" onClick={this.createAndJoinRoom}>
               Create room
-            </button>
+            </Button>
             <div><input
               type="button"
               value="Join room"
