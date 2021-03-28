@@ -34,7 +34,7 @@ class App extends React.Component {
     const myVideo = document.createElement('video')
     myVideo.muted = true
     navigator.mediaDevices.getUserMedia({
-      //video: true,
+      video: true,
       audio: true
     }).then(stream => {
       addVideoStream(myVideo, stream)
@@ -47,6 +47,7 @@ class App extends React.Component {
       })
 
       socket.on('user-connected', userId => {
+        console.log("New user connected", userId)
         connectToNewUser(userId, stream)
       })
     })
