@@ -1,13 +1,19 @@
 import React from 'react';
-import chat_image from './chat_image.jpeg';
 import './App.css';
-//import './Connections.js'
 import Peer from "peerjs";
-//import io from "socket.io-client";
-//import io from "socket.io";
 
 import { io } from "socket.io-client";
+import { Button } from '@material-ui/core';
 
+const DEV = false
+
+let server = DEV ? 'http://localhost:3002': 'https://m8-walkie.ew.r.appspot.com'
+let peerjsServerOptions = DEV ? { host: "/", port: 2000} : { host: 'peerjs-dot-m8-walkie.ew.r.appspot.com', secure: true}
+
+console.log("Connect to server", server)
+const socket = io(server)
+console.log("Connect to peerjs server", peerjsServerOptions.host)
+const myPeer = new Peer(undefined, peerjsServerOptions)
 
 class App extends React.Component {
 
@@ -19,20 +25,12 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    const socket = io('https://m8-walkie.ew.r.appspot.com/');
-
-    socket.emit('hello')
-
-    const myPeer = new Peer(undefined, {
-      host: 'peerjs-dot-m8-walkie.ew.r.appspot.com',
-      secure: true
-    })
 
     const videoGrid = document.getElementById('video-grid')
     const myVideo = document.createElement('video')
     myVideo.muted = true
     navigator.mediaDevices.getUserMedia({
-      video: true,
+      //video: true,
       audio: true
     }).then(stream => {
       addVideoStream(myVideo, stream)
@@ -86,15 +84,25 @@ class App extends React.Component {
 
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={chat_image} className="App-logo" alt="chat_image" />
-          <p>
-            Chat with your m8's!
-          </p>
-          <div id="video-grid"></div>
-        </header>
-      </div>
+        <div className="App">
+          <header className="App-header">
+            <p>
+              Chat with your m8's!
+            </p>
+            <Button variant="contained" color="primary" onClick={this.createAndJoinRoom}>
+              Create room
+            </Button>
+            <div><input
+              type="button"
+              value="Join room"
+              onClick={this.submitJoinRoom}
+            />
+            <input type="text" onChange={ this.saveInput } />
+            </div>
+            <p>{this.state.roomId ? 'Room name: ' + this.state.roomId : ''}</p>
+            <div id="video-grid"></div>
+          </header>
+        </div>
     );
   }
 }
