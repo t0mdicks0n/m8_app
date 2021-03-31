@@ -3,6 +3,13 @@ import './App.css';
 import Peer from "peerjs";
 import { io } from "socket.io-client";
 import { Button } from '@material-ui/core';
+import PinnedSubheaderList from "./List";
+import LongMenu from "./Menu";
+import ButtonAppBar from "./AppBar";
+import {ThemeProvider} from "@material-ui/styles";
+import { createMuiTheme } from '@material-ui/core/styles';
+import purple from '@material-ui/core/colors/purple';
+import green from '@material-ui/core/colors/green';
 
 const DEV = false
 
@@ -13,6 +20,17 @@ console.log("Connect to server", server)
 const socket = io(server)
 console.log("Connect to peerjs server", peerjsServerOptions.host)
 const myPeer = new Peer(undefined, peerjsServerOptions)
+
+const theme = createMuiTheme({
+  palette: {
+    primary: {
+      main: "#282C34",
+    },
+    secondary: {
+      main: '#282C34',
+    },
+  },
+});
 
 class App extends React.Component {
 
@@ -81,7 +99,7 @@ class App extends React.Component {
       video.addEventListener('loadedmetadata', () => {
         video.play()
       })
-      videoGrid.append(video)
+      //videoGrid.append(video)
     }
 
   }
@@ -112,26 +130,13 @@ class App extends React.Component {
 
   render() {
     return (
-        <div className="App">
-          <header className="App-header">
-            <p>
-              Chat with your m8's!
-            </p>
+        <ThemeProvider theme={theme}>
+          <div className="App">
+            <ButtonAppBar/>
+            <PinnedSubheaderList/>
 
-            <Button variant="contained" color="primary" onClick={this.createAndJoinRoom}>
-              Create room
-            </Button>
-            <div><input
-              type="button"
-              value="Join room"
-              onClick={this.submitJoinRoom}
-            />
-            <input type="text" onChange={ this.saveInput } />
-            </div>
-            <p>{this.state.roomId ? 'Room name: ' + this.state.roomId : ''}</p>
-            <div id="video-grid"></div>
-          </header>
-        </div>
+          </div>
+        </ThemeProvider>
     );
   }
 }
