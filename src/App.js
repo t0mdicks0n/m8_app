@@ -4,9 +4,10 @@ import Peer from "peerjs";
 import { io } from "socket.io-client";
 import { Button } from '@material-ui/core';
 
-const DEV = false
+const DEV = true
 
-let server = DEV ? 'http://localhost:3002': 'https://m8-walkie.ew.r.appspot.com'
+// What is a better way to do this?
+let server = DEV ? 'http://localhost:8080': 'https://m8-walkie.ew.r.appspot.com'
 let peerjsServerOptions = DEV ? { host: "/", port: 2000} : { host: 'peerjs-dot-m8-walkie.ew.r.appspot.com', secure: true}
 
 console.log("Connect to server", server)
@@ -15,7 +16,6 @@ console.log("Connect to peerjs server", peerjsServerOptions.host)
 const myPeer = new Peer(undefined, peerjsServerOptions)
 
 class App extends React.Component {
-
 
   constructor(props) {
     super(props);
@@ -28,13 +28,11 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-
- 
     const videoGrid = document.getElementById('video-grid')
     const myVideo = document.createElement('video')
     myVideo.muted = true
     navigator.mediaDevices.getUserMedia({
-      //video: true,
+      video: true,
       audio: true
     }).then(stream => {
       addVideoStream(myVideo, stream)
