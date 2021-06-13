@@ -18,35 +18,40 @@ class App extends React.Component {
     this.saveInput = this.saveInput.bind(this);
     this.joinRoom = this.joinRoom.bind(this);
     this.submitJoinRoom = this.submitJoinRoom.bind(this);
+    this.addVideoStreamToGrid = this.addVideoStreamToGrid.bind(this);
+    this.connectToNewUser = this.connectToNewUser.bind(this);
   }
 
   componentDidMount() {
-
-
     const videoGrid = document.getElementById('video-grid')
     const myVideo = document.createElement('video')
 
     myVideo.muted = true
-    navigator.mediaDevices.getUserMedia({
+
+    let myMedia = navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true
-    }).then(stream => {
-      addVideoStream(myVideo, stream)
+    });
+
+    const peers = {}
+
+    myMedia.then(stream => {
+      this.addVideoStreamToGrid(myVideo, stream, videoGrid)
       webRTCApi.on('call', call => {
         call.answer(stream)
         const video = document.createElement('video')
         call.on('stream', userVideoStream => {
-          addVideoStream(video, userVideoStream)
+          this.addVideoStreamToGrid(video, userVideoStream, videoGrid)
         })
       })
 
       socketServer.on('user-connected', userId => {
         console.log("New user connected", userId)
-        connectToNewUser(userId, stream)
+        this.connectToNewUser(userId, stream, peers, videoGrid)
       })
     })
 
-    const peers = {}
+
 
     socketServer.on('user-disconnected', userId => {
       if (peers[userId]) peers[userId].close()
@@ -57,28 +62,29 @@ class App extends React.Component {
       this.setState({'id': id})
     })
 
-    function connectToNewUser(userId, stream) {
+  }
+
+  connectToNewUser(userId, stream, peers, videoGrid) {
       const call = webRTCApi.call(userId, stream)
       const video = document.createElement('video')
       call.on('stream', userVideoStream => {
-        addVideoStream(video, userVideoStream)
+        this.addVideoStreamToGrid(video, userVideoStream, videoGrid)
       })
       call.on('close', () => {
         video.remove()
       })
 
       peers[userId] = call
-    }
+  }
 
-    function addVideoStream(video, stream) {
+  addVideoStreamToGrid(video, stream, videoGrid) {
       video.srcObject = stream
       video.addEventListener('loadedmetadata', () => {
         video.play()
       })
       videoGrid.append(video)
-    }
-
   }
+
 
   createAndJoinRoom() {
     fetch(socketServerHost + "/create-new-room")
