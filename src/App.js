@@ -3,7 +3,6 @@ import './App.css';
 import {Button} from '@material-ui/core';
 import {connectToWebRTCApi, connectToSocketServer} from './Connections.js';
 import {socketServerHost} from "./Config";
-import getStream from "./Stream";
 import Video from "./Video.js";
 
 // TODO: Go through repo and understand what the different files do
@@ -15,48 +14,44 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
-    this.state = {}
-    this.setState({})
+    this.state = {"calls": {}}
     this.createAndJoinRoom = this.createAndJoinRoom.bind(this);
     this.saveInput = this.saveInput.bind(this);
     this.joinRoom = this.joinRoom.bind(this);
     this.submitJoinRoom = this.submitJoinRoom.bind(this);
     this.addVideoStreamToGrid = this.addVideoStreamToGrid.bind(this);
     this.connectToNewUser = this.connectToNewUser.bind(this);
-    this.saveWebRTCId = this.saveWebRTCId.bind(this);
-    this.setMyStream = this.setMyStream.bind(this);
-    this.registerFunctionToHandleCallFromWebRTCApi = this.registerFunctionToHandleCallFromWebRTCApi.bind(this);
+    this.saveMyWebRTCId = this.saveMyWebRTCId.bind(this);
+    this.startMyStream = this.startMyStream.bind(this);
+    this.registerFunctionToHandleIncomingWebRTCCall = this.registerFunctionToHandleIncomingWebRTCCall.bind(this);
     this.registerFunctionToHandleNewUserConnectingFromServer = this.registerFunctionToHandleNewUserConnectingFromServer.bind(this)
+    this.registerFunctionToHandleUserDisconnectingFromServer = this.registerFunctionToHandleUserDisconnectingFromServer.bind(this)
   }
 
   componentDidMount() {
     const videoGrid = document.getElementById('video-grid')
-    const peers = {}
-    this.saveWebRTCId()
-    this.setMyStream()
-    this.registerFunctionToHandleCallFromWebRTCApi(videoGrid)
-    this.registerFunctionToHandleNewUserConnectingFromServer(peers, videoGrid)
-
-    socketServer.on('user-disconnected', userId => {
-      if (peers[userId]) peers[userId].close()
-    })
+    this.saveMyWebRTCId()
+    this.startMyStream()
+    this.registerFunctionToHandleIncomingWebRTCCall(videoGrid)
+    this.registerFunctionToHandleNewUserConnectingFromServer(videoGrid)
+    this.registerFunctionToHandleUserDisconnectingFromServer()
   }
 
-  saveWebRTCId() {
+  saveMyWebRTCId() {
     webRTCApi.on('open', id => {
       console.log("Peerjs id ", id)
       this.setState({'id': id})
     })
   }
 
-  setMyStream() {
+  startMyStream() {
     getStream().then(stream => {
       console.log("Set my stream", stream)
       this.setState({"myStream": stream})
     })
   }
 
-  registerFunctionToHandleCallFromWebRTCApi(videoGrid) {
+  registerFunctionToHandleIncomingWebRTCCall(videoGrid) {
     webRTCApi.on('call', call => {
         call.answer(this.state.myStream)
         const video = document.createElement('video')
@@ -66,7 +61,21 @@ class App extends React.Component {
     })
   }
 
-  connectToNewUser(userId, stream, peers, videoGrid) {
+  registerFunctionToHandleNewUserConnectingFromServer( videoGrid) {
+    socketServer.on('user-connected', userId => {
+        console.log("New user connected", userId)
+        this.connectToNewUser(userId, this.state.myStream, videoGrid)
+    })
+  }
+
+  registerFunctionToHandleUserDisconnectingFromServer() {
+    socketServer.on('user-disconnected', userId => {
+      console.log(this.state.calls, userId)
+      if (this.state.calls[userId]) this.state.calls[userId].close()
+    })
+  }
+
+  connectToNewUser(userId, stream, videoGrid) {
     const call = webRTCApi.call(userId, stream)
     const video = document.createElement('video')
     call.on('stream', userVideoStream => {
@@ -75,8 +84,8 @@ class App extends React.Component {
     call.on('close', () => {
       video.remove()
     })
-
-    peers[userId] = call
+    this.setState({"calls":  { ...this.state.calls, [userId] : call }})
+    console.log(this.state.calls)
   }
 
   addVideoStreamToGrid(video, stream, videoGrid) {
@@ -119,7 +128,6 @@ class App extends React.Component {
             <p>
               Chat with your m8's!
             </p>
-
             <Button variant="contained" color="primary" onClick={this.createAndJoinRoom}>
               Create room
             </Button>
@@ -134,18 +142,17 @@ class App extends React.Component {
             <div id="video-grid">
               <Video stream={this.state.myStream} name={"Sonja"} autoPlay muted/>
             </div>
-
           </header>
         </div>
     );
   }
+}
 
-  registerFunctionToHandleNewUserConnectingFromServer(peers, videoGrid) {
-    socketServer.on('user-connected', userId => {
-        console.log("New user connected", userId)
-        this.connectToNewUser(userId, this.state.myStream, peers, videoGrid)
-    })
-  }
+function getStream() {
+   return navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true
+     })
 }
 
 export default App;
