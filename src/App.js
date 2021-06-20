@@ -20,7 +20,6 @@ class App extends React.Component {
     this.joinRoom = this.joinRoom.bind(this);
     this.submitJoinRoom = this.submitJoinRoom.bind(this);
     this.addVideoStreamToGrid = this.addVideoStreamToGrid.bind(this);
-    this.connectToNewUser = this.connectToNewUser.bind(this);
     this.saveMyWebRTCId = this.saveMyWebRTCId.bind(this);
     this.startMyStream = this.startMyStream.bind(this);
     this.registerFunctionToHandleIncomingWebRTCCall = this.registerFunctionToHandleIncomingWebRTCCall.bind(this);
@@ -45,7 +44,10 @@ class App extends React.Component {
   }
 
   startMyStream() {
-    getStream().then(stream => {
+    navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true
+     }).then(stream => {
       console.log("Set my stream", stream)
       this.setState({"myStream": stream})
     })
@@ -64,7 +66,15 @@ class App extends React.Component {
   registerFunctionToHandleNewUserConnectingFromServer( videoGrid) {
     socketServer.on('user-connected', userId => {
         console.log("New user connected", userId)
-        this.connectToNewUser(userId, this.state.myStream, videoGrid)
+        const call = webRTCApi.call(userId, this.state.myStream)
+        const video = document.createElement('video')
+        call.on('stream', userVideoStream => {
+          this.addVideoStreamToGrid(video, userVideoStream, videoGrid)
+        })
+        call.on('close', () => {
+          video.remove()
+        })
+        this.setState({"calls":  { ...this.state.calls, [userId] : call }})
     })
   }
 
@@ -73,19 +83,6 @@ class App extends React.Component {
       console.log(this.state.calls, userId)
       if (this.state.calls[userId]) this.state.calls[userId].close()
     })
-  }
-
-  connectToNewUser(userId, stream, videoGrid) {
-    const call = webRTCApi.call(userId, stream)
-    const video = document.createElement('video')
-    call.on('stream', userVideoStream => {
-      this.addVideoStreamToGrid(video, userVideoStream, videoGrid)
-    })
-    call.on('close', () => {
-      video.remove()
-    })
-    this.setState({"calls":  { ...this.state.calls, [userId] : call }})
-    console.log(this.state.calls)
   }
 
   addVideoStreamToGrid(video, stream, videoGrid) {
@@ -146,13 +143,6 @@ class App extends React.Component {
         </div>
     );
   }
-}
-
-function getStream() {
-   return navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true
-     })
 }
 
 export default App;
