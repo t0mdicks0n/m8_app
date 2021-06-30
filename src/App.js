@@ -5,8 +5,6 @@ import {connectToWebRTCApi, connectToSocketServer} from './Connections.js';
 import {socketServerHost} from "./Config";
 import Video from "./Video.js";
 
-// TODO: Go through repo and understand what the different files do
-// TODO: Should connections go here or better in component did mount?
 const socketServer = connectToSocketServer()
 const webRTCApi = connectToWebRTCApi()
 
@@ -14,12 +12,11 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
-    this.state = {"calls": {}}
+    this.state = {"calls": {}, "mediaStreams": {}}
     this.createAndJoinRoom = this.createAndJoinRoom.bind(this);
     this.saveInput = this.saveInput.bind(this);
     this.joinRoom = this.joinRoom.bind(this);
     this.submitJoinRoom = this.submitJoinRoom.bind(this);
-    this.addVideoStreamToGrid = this.addVideoStreamToGrid.bind(this);
     this.saveMyWebRTCId = this.saveMyWebRTCId.bind(this);
     this.startMyStream = this.startMyStream.bind(this);
     this.registerFunctionToHandleIncomingWebRTCCall = this.registerFunctionToHandleIncomingWebRTCCall.bind(this);
@@ -28,11 +25,10 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    const videoGrid = document.getElementById('video-grid')
     this.saveMyWebRTCId()
     this.startMyStream()
-    this.registerFunctionToHandleIncomingWebRTCCall(videoGrid)
-    this.registerFunctionToHandleNewUserConnectingFromServer(videoGrid)
+    this.registerFunctionToHandleIncomingWebRTCCall()
+    this.registerFunctionToHandleNewUserConnectingFromServer()
     this.registerFunctionToHandleUserDisconnectingFromServer()
   }
 
@@ -53,26 +49,28 @@ class App extends React.Component {
     })
   }
 
-  registerFunctionToHandleIncomingWebRTCCall(videoGrid) {
+  registerFunctionToHandleIncomingWebRTCCall() {
     webRTCApi.on('call', call => {
         call.answer(this.state.myStream)
-        const video = document.createElement('video')
         call.on('stream', userVideoStream => {
-          this.addVideoStreamToGrid(video, userVideoStream, videoGrid)
+          this.setState({"mediaStreams":  { ...this.state.mediaStreams, [call.peer] : userVideoStream }})
         })
     })
   }
 
-  registerFunctionToHandleNewUserConnectingFromServer( videoGrid) {
+  registerFunctionToHandleNewUserConnectingFromServer() {
     socketServer.on('user-connected', userId => {
         console.log("New user connected", userId)
         const call = webRTCApi.call(userId, this.state.myStream)
-        const video = document.createElement('video')
         call.on('stream', userVideoStream => {
-          this.addVideoStreamToGrid(video, userVideoStream, videoGrid)
+          this.setState({"mediaStreams":  { ...this.state.mediaStreams, [call.peer] : userVideoStream }})
         })
         call.on('close', () => {
-          video.remove()
+          const streams = {...this.state.mediaStreams}
+          delete streams[call.peer]
+          this.setState({
+             mediaStreams: streams,
+          })
         })
         this.setState({"calls":  { ...this.state.calls, [userId] : call }})
     })
@@ -83,14 +81,6 @@ class App extends React.Component {
       console.log(this.state.calls, userId)
       if (this.state.calls[userId]) this.state.calls[userId].close()
     })
-  }
-
-  addVideoStreamToGrid(video, stream, videoGrid) {
-    video.srcObject = stream
-    video.addEventListener('loadedmetadata', () => {
-      video.play()
-    })
-    videoGrid.append(video)
   }
 
 
@@ -138,6 +128,11 @@ class App extends React.Component {
             <p>{this.state.roomId ? 'Room name: ' + this.state.roomId : ''}</p>
             <div id="video-grid">
               <Video stream={this.state.myStream} name={"Sonja"} autoPlay muted/>
+              {
+                Object.keys(this.state.mediaStreams).map((key, index) => (
+                    <Video key={index} stream={this.state.mediaStreams[key]} name={"any"} autoPlay muted/>
+                ))
+              }
             </div>
           </header>
         </div>
