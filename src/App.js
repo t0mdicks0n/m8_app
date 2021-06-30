@@ -26,6 +26,13 @@ function App() {
     registerFunctionToHandleUserDisconnectingFromServer()
   }, []);
 
+  useEffect(() => {
+    joinRoom(roomId)
+  }, [roomId])
+
+  useEffect(() => {
+    console.log("my steam changed")
+  }, [myStream])
 
   function saveMyWebRTCId() {
     webRTCApi.on('open', id => {
@@ -84,15 +91,11 @@ function App() {
   }
 
 
-  function createAndJoinRoom() {
+  function createAndSetRoom() {
     fetch(socketServerHost + "/create-new-room")
         .then(res => res.json())
         .then((data) => {
-          console.log("room id", data["roomId"])
           setRoomId(data["roomId"])
-          console.log("Joining room")
-          console.log("room id", roomId)
-          joinRoom(roomId)
         })
         .catch(console.log)
   }
@@ -116,7 +119,7 @@ function App() {
             <p>
               Chat with your m8's!
             </p>
-            <Button variant="contained" color="primary" onClick={createAndJoinRoom}>
+            <Button variant="contained" color="primary" onClick={createAndSetRoom}>
               Create room
             </Button>
             <div><input
