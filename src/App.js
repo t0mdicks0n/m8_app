@@ -53,7 +53,6 @@ class App extends React.Component {
   registerFunctionToHandleIncomingWebRTCCall() {
     webRTCApi.on('call', call => {
         call.answer(this.state.myStream)
-        console.log(call)
         call.on('stream', userVideoStream => {
           this.setState({"mediaStreams":  { ...this.state.mediaStreams, [call.peer] : userVideoStream }})
         })
