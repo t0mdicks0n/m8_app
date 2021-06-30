@@ -25,7 +25,6 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    const videoGrid = document.getElementById('video-grid')
     this.saveMyWebRTCId()
     this.startMyStream()
     this.registerFunctionToHandleIncomingWebRTCCall()
@@ -83,6 +82,7 @@ class App extends React.Component {
       if (this.state.calls[userId]) this.state.calls[userId].close()
     })
   }
+
 
   createAndJoinRoom() {
     fetch(socketServerHost + "/create-new-room")
