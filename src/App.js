@@ -5,8 +5,6 @@ import {connectToWebRTCApi, connectToSocketServer} from './Connections.js';
 import {socketServerHost} from "./Config";
 import Video from "./Video.js";
 
-// TODO: Go through repo and understand what the different files do
-// TODO: Should connections go here or better in component did mount?
 const socketServer = connectToSocketServer()
 const webRTCApi = connectToWebRTCApi()
 
